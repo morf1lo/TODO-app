@@ -1,21 +1,27 @@
 package app
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+
+	"github.com/morf1lo/TODO-app/internal/db"
+	"github.com/morf1lo/TODO-app/internal/routes"
 )
 
 func App() {
+	client, err := db.InitDB()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	router := gin.New()
 	router.Use(cors.Default())
 
 	router.SetTrustedProxies(nil)
 
-	router.GET("/api/greeting/:name", func(c *gin.Context) {
-		c.JSON(200, gin.H{"message": fmt.Sprintf("Hello, %s!", c.Param("name"))})
-	})
+	routes.SetupUserRoutes(router, client.Database("TODO").Collection("users"))
 
 	router.Run(":8080")
 }
