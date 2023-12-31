@@ -9,4 +9,5 @@ import (
 
 func SetupUserRoutes(router *gin.Engine, collection *mongo.Collection) {
 	router.POST("/api/users/create", controllers.CreateUser(collection))
+	router.POST("/api/users/login", controllers.Login(collection))
 }

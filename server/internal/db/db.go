@@ -18,7 +18,7 @@ func InitDB() (*mongo.Client, error) {
 	usersCollection := client.Database("TODO").Collection("users")
 
 	_, err = usersCollection.Indexes().CreateOne(context.TODO(), mongo.IndexModel{
-		Keys: bson.D{{Key: "email", Value: 1}},
+		Keys: bson.D{{Key: "username", Value: 1}},
 		Options: options.Index().SetUnique(true),
 	})
 	if err != nil {
