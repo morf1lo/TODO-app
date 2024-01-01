@@ -8,9 +8,12 @@ import (
 
 	"github.com/morf1lo/TODO-app/internal/db"
 	"github.com/morf1lo/TODO-app/internal/routes"
+	"github.com/morf1lo/TODO-app/config"
 )
 
 func App() {
+	config.Init()
+
 	client, err := db.InitDB()
 	if err != nil {
 		log.Fatal(err)

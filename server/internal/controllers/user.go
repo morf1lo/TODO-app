@@ -7,8 +7,11 @@ package controllers
 import (
 	"context"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
@@ -27,6 +30,30 @@ func hashPassword(password string) (string, error) {
 func verifyPassword(password string, hashedPassword string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	return err == nil
+}
+
+func generateToken(username string) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.MapClaims{
+		"uname": username,
+		"exp": time.Now().Add(time.Hour * 24 * 30).Unix(),
+	})
+
+	tokenString, err := token.SignedString([]byte(os.Getenv("SECRET")))
+	if err != nil {
+		return "", err
+	}
+
+	return tokenString, nil
+}
+
+func createSendToken(c *gin.Context, username string) error {
+	token, err := generateToken(username)
+	if err != nil {
+		return err
+	}
+
+	c.SetCookie("jwt", token, int(time.Now().Add(time.Hour * 24 * 30).Unix()), "", "", true, true)
+	return nil
 }
 
 func CreateUser(collection *mongo.Collection) gin.HandlerFunc {
@@ -59,7 +86,10 @@ func CreateUser(collection *mongo.Collection) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-	
+
+		if err := createSendToken(c, user.Username); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		c.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
 	}
 }
@@ -90,6 +120,10 @@ func Login(collection *mongo.Collection) gin.HandlerFunc {
 			return
 		}
 
+		if err := createSendToken(c, existingUser.Username); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusOK, gin.H{"message": "Log in successfully"})
 	}
 }
