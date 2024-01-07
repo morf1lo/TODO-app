@@ -73,11 +73,12 @@ func CreateUser(collection *mongo.Collection) gin.HandlerFunc {
 		hash, err := hashPassword(user.Password)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
 		}
 
 		user.Password = hash
 
-		_, err = collection.InsertOne(context.TODO(), user, nil)
+		_, err = collection.InsertOne(context.TODO(), user)
 		if err != nil {
 			if mongo.IsDuplicateKeyError(err) {
 				c.JSON(http.StatusConflict, gin.H{"error": "User with this username is already exist"})
@@ -90,7 +91,7 @@ func CreateUser(collection *mongo.Collection) gin.HandlerFunc {
 		if err := createSendToken(c, user.Username); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
-		c.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
+		c.JSON(http.StatusOK, gin.H{"success": true})
 	}
 }
 
@@ -124,6 +125,6 @@ func Login(collection *mongo.Collection) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"message": "Log in successfully"})
+		c.JSON(http.StatusOK, gin.H{"success": true})
 	}
 }

@@ -25,6 +25,7 @@ func App() {
 	router.SetTrustedProxies(nil)
 
 	routes.SetupUserRoutes(router, client.Database("TODO").Collection("users"))
+	routes.SetupTodoRoutes(router, client.Database("TODO").Collection("todos"))
 
 	router.Run(":8080")
 }
