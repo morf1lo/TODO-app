@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 
@@ -32,9 +33,9 @@ func verifyPassword(password string, hashedPassword string) bool {
 	return err == nil
 }
 
-func generateToken(username string) (string, error) {
+func generateToken(id string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.MapClaims{
-		"uname": username,
+		"sub": id,
 		"exp": time.Now().Add(time.Hour * 24 * 30).Unix(),
 	})
 
@@ -46,8 +47,8 @@ func generateToken(username string) (string, error) {
 	return tokenString, nil
 }
 
-func createSendToken(c *gin.Context, username string) error {
-	token, err := generateToken(username)
+func createSendToken(c *gin.Context, id string) error {
+	token, err := generateToken(id)
 	if err != nil {
 		return err
 	}
@@ -77,8 +78,9 @@ func CreateUser(collection *mongo.Collection) gin.HandlerFunc {
 		}
 
 		user.Password = hash
+		user.ID = primitive.NewObjectID()
 
-		_, err = collection.InsertOne(context.TODO(), user)
+		inserted, err := collection.InsertOne(context.TODO(), user)
 		if err != nil {
 			if mongo.IsDuplicateKeyError(err) {
 				c.JSON(http.StatusConflict, gin.H{"error": "User with this username is already exist"})
@@ -88,7 +90,7 @@ func CreateUser(collection *mongo.Collection) gin.HandlerFunc {
 			return
 		}
 
-		if err := createSendToken(c, user.Username); err != nil {
+		if err := createSendToken(c, inserted.InsertedID.(primitive.ObjectID).Hex()); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
 		c.JSON(http.StatusOK, gin.H{"success": true})
@@ -121,7 +123,7 @@ func Login(collection *mongo.Collection) gin.HandlerFunc {
 			return
 		}
 
-		if err := createSendToken(c, existingUser.Username); err != nil {
+		if err := createSendToken(c, existingUser.ID.Hex()); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}

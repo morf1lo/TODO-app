@@ -11,4 +11,6 @@ import (
 func SetupTodoRoutes(router *gin.Engine, collection *mongo.Collection) {
 	router.POST("/api/todos/create", middlewares.AuthMiddleware(), controllers.CreateTodo(collection))
 	router.GET("/api/todos", middlewares.AuthMiddleware(), controllers.FindAllTodos(collection))
+	router.PUT("/api/todos/update/:id", middlewares.AuthMiddleware(), controllers.UpdateTodo(collection))
+	router.DELETE("/api/todos/delete/:id", middlewares.AuthMiddleware(), controllers.DeleteTodo(collection))
 }
