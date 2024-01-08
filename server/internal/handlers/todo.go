@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -11,6 +12,30 @@ import (
 
 	"github.com/morf1lo/TODO-app/internal/models"
 )
+
+type UpdateOptions struct {
+	Title     string `json:"title"`
+	Text      string `json:"text"`
+	Completed *bool   `json:"completed,omitempty"`
+}
+
+func (u *UpdateOptions) FilterUpdateOptions() bson.M {
+	update := bson.M{"$set": bson.M{}}
+
+	if strings.TrimSpace(u.Title) != "" {
+		update["$set"].(bson.M)["title"] = strings.TrimSpace(u.Title)
+	}
+
+	if strings.TrimSpace(u.Text) != "" {
+		update["$set"].(bson.M)["text"] = strings.TrimSpace(u.Text)
+	}
+
+	if u.Completed != nil {
+		update["$set"].(bson.M)["completed"] = *u.Completed
+	}
+
+	return update
+}
 
 // Create Todo
 func CreateTodo(collection *mongo.Collection) gin.HandlerFunc {
@@ -104,14 +129,12 @@ func UpdateTodo(collection *mongo.Collection) gin.HandlerFunc {
 			return
 		}
 
-		var updateFields map[string]interface{}
+		var updateFields UpdateOptions
 
 		if err := c.ShouldBindJSON(&updateFields); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 			return
 		}
-
-		delete(updateFields, "userid")
 
 		todoObjectId, err := primitive.ObjectIDFromHex(c.Param("id"))
 		if err != nil {
@@ -123,7 +146,10 @@ func UpdateTodo(collection *mongo.Collection) gin.HandlerFunc {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "User is not authorized"})
 		}
-		data, err := collection.UpdateOne(context.TODO(), bson.M{"_id": todoObjectId, "userid": userObjectId}, bson.M{"$set": updateFields})
+
+		update := updateFields.FilterUpdateOptions()
+
+		data, err := collection.UpdateOne(context.TODO(), bson.M{"_id": todoObjectId, "userid": userObjectId}, update)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
