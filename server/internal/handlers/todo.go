@@ -145,6 +145,7 @@ func UpdateTodo(collection *mongo.Collection) gin.HandlerFunc {
 		userObjectId, err := primitive.ObjectIDFromHex(userId)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "User is not authorized"})
+			return
 		}
 
 		update := updateFields.FilterUpdateOptions()
