@@ -7,7 +7,7 @@ import (
 
 type Todo struct {
 	ID				primitive.ObjectID	`bson:"_id"`
-	UserID		primitive.ObjectID	`json:"userId" validate:"required"`
+	UserID		primitive.ObjectID	`json:"userid" validate:"required"`
 	Title			string							`json:"title" validate:"required,min=1,max=30"`
 	Text			string							`json:"text" validate:"required,min=1,max=120"`
 	Completed	bool								`json:"completed"`

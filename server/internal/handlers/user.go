@@ -1,4 +1,4 @@
-package controllers
+package handlers
 
 // "go.mongodb.org/mongo-driver/bson"
 // "go.mongodb.org/mongo-driver/bson/primitive"
@@ -57,6 +57,7 @@ func createSendToken(c *gin.Context, id string) error {
 	return nil
 }
 
+// SignUp
 func CreateUser(collection *mongo.Collection) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var user models.User
@@ -97,6 +98,7 @@ func CreateUser(collection *mongo.Collection) gin.HandlerFunc {
 	}
 }
 
+// Log in
 func Login(collection *mongo.Collection) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var user models.User

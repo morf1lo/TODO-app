@@ -1,4 +1,4 @@
-package controllers
+package handlers
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"github.com/morf1lo/TODO-app/internal/models"
 )
 
+// Create Todo
 func CreateTodo(collection *mongo.Collection) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userId := c.GetString("uid")
@@ -52,6 +53,7 @@ func CreateTodo(collection *mongo.Collection) gin.HandlerFunc {
 	}
 }
 
+// Get all Todos
 func FindAllTodos(collection *mongo.Collection) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userId := c.GetString("uid")
@@ -93,6 +95,7 @@ func FindAllTodos(collection *mongo.Collection) gin.HandlerFunc {
 	}
 }
 
+// Update Todo info
 func UpdateTodo(collection *mongo.Collection) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userId := c.GetString("uid")
@@ -101,29 +104,36 @@ func UpdateTodo(collection *mongo.Collection) gin.HandlerFunc {
 			return
 		}
 
-		var updateTodoOptions map[string]interface{}
+		var updateFields map[string]interface{}
 
-		if err := c.ShouldBindJSON(&updateTodoOptions); err != nil {
+		if err := c.ShouldBindJSON(&updateFields); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 			return
 		}
 
-		objectId, err := primitive.ObjectIDFromHex(c.Param("id"))
+		delete(updateFields, "userid")
+
+		todoObjectId, err := primitive.ObjectIDFromHex(c.Param("id"))
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		updatedTodo, err := collection.UpdateByID(context.TODO(), objectId, bson.D{{Key: "$set", Value: updateTodoOptions}})
+		userObjectId, err := primitive.ObjectIDFromHex(userId)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "User is not authorized"})
+		}
+		data, err := collection.UpdateOne(context.TODO(), bson.M{"_id": todoObjectId, "userid": userObjectId}, bson.M{"$set": updateFields})
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"success": true, "data": updatedTodo})
+		c.JSON(http.StatusOK, gin.H{"success": true, "data": data})
 	}
 }
 
+// Delete Todo
 func DeleteTodo(collection *mongo.Collection) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userId := c.GetString("uid")
